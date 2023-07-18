@@ -36,10 +36,10 @@ Note that this is a very **powerful but also dangerous tool** that can **delete 
 }
 
 ```
-| Flag                             | What?                                                       | Source                                                     | Target                        |
-|----------------------------------|-------------------------------------------------------------|------------------------------------------------------------|-------------------------------|
-| `data/foo.txt": "files/foo.txt`  | Copy file from source to destination.                       | `<project_dir>/vendor/code4nix/super-package/data/foo.txt` | `<project_dir>/files/foo.txt` |
-| `data/sub": "files/sub`          | Copy files & folders of source folder to the target folder. | `<project_dir>/vendor/code4nix/super-package/data/sub/*.*` | `<project_dir>/files/sub`     |
+| Composer Extra (Source: Target) | What?                                                       | Source                                                     | Target                        |
+|---------------------------------|-------------------------------------------------------------|------------------------------------------------------------|-------------------------------|
+| `data/foo.txt": "files/foo.txt` | Copy file from source to destination.                       | `<project_dir>/vendor/code4nix/super-package/data/foo.txt` | `<project_dir>/files/foo.txt` |
+| `data/sub": "files/sub`         | Copy files & folders of source folder to the target folder. | `<project_dir>/vendor/code4nix/super-package/data/sub/*.*` | `<project_dir>/files/sub`     |
 
 
 ### Flags
