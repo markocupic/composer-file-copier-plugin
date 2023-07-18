@@ -84,15 +84,22 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $composer = $event->getComposer();
         $io = $event->getIO();
 
-        // If root package is not a project, the plugin will not install files.
+        // If root package is not a project, the plugin will not copy files.
         if (!$this->isProject) {
             return;
         }
 
         $packages = $this->repositoryManager->getLocalRepository()->getPackages();
+        $processed = [];
 
         if (!empty($packages)) {
             foreach ($packages as $package) {
+                if (\in_array($package->getName(), $processed, true)) {
+                    continue;
+                }
+
+                $processed[] = $package->getName();
+
                 $processor = new Processor($package, $composer, $io);
                 $processor->copyResources();
             }

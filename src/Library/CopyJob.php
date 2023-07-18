@@ -40,7 +40,7 @@ class CopyJob
         protected readonly Composer $composer,
         protected readonly IOInterface $io,
     ) {
-        $this->strOrigin = $this->getRootDir().\DIRECTORY_SEPARATOR.$this->getPackageDistUrl().\DIRECTORY_SEPARATOR.$this->strOrigin;
+        $this->strOrigin = $this->getPackageInstallerPath().\DIRECTORY_SEPARATOR.$this->strOrigin;
         $this->strTarget = $this->getRootDir().\DIRECTORY_SEPARATOR.$this->strTarget;
 
         // Set options from flags
@@ -124,8 +124,20 @@ class CopyJob
         return $rootDir;
     }
 
-    protected function getPackageDistUrl(): string
+    /**
+     * Returns the absolute path to the packages installer path
+     * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package.
+     *
+     * @throws \Exception
+     */
+    protected function getPackageInstallerPath(): string
     {
-        return $this->package->getDistUrl();
+        $path = $this->composer->getInstallationManager()->getInstaller('library')->getInstallPath($this->package);
+
+        if (null === $path) {
+            throw new \Exception('Installer path for package '.$this->package->getName().' not found.');
+        }
+
+        return $path;
     }
 }
