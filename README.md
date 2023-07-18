@@ -2,7 +2,7 @@
 
 # Composer File Copier Plugin
 
-With this **Composer plugin** you can copy files/folders located inside a **composer package** to a directory during the `composer install` or `composer update` process.
+With this **Composer plugin** you can copy files/folders located inside a **composer package** in your **local repository** to a **directory** on your **local filesystem** during the `composer install` or `composer update` process.
 
 The configuration is made in the extra key of the composer.json file of the respective composer package.
 
