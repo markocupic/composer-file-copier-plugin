@@ -2,9 +2,9 @@
 
 # Composer File Copier Plugin
 
-With this Composer plugin you can copy files from a package to a target directory during the `composer install` or `composer update` process.
+With this **Composer plugin** you can copy files/folders located inside a **composer package** to a directory during the `composer install` or `composer update` process.
 
-The configuration is made in the extra key of the composer.json file of the respective package.
+The configuration is made in the extra key of the composer.json file of the respective composer package.
 
 Note that this is a very **powerful but also dangerous tool** that can **delete directories** and **destroy installations** if you do not care.
 
@@ -36,7 +36,7 @@ Note that this is a very **powerful but also dangerous tool** that can **delete 
 }
 
 ```
-| Composer Extra (Source: Target) | What?                                                       | Source                                                     | Target                        |
+| Composer Extra (Source: Target) | What?                                                       | Source (inside package)                                    | Target                        |
 |---------------------------------|-------------------------------------------------------------|------------------------------------------------------------|-------------------------------|
 | `data/foo.txt": "files/foo.txt` | Copy file from source to destination.                       | `<project_dir>/vendor/code4nix/super-package/data/foo.txt` | `<project_dir>/files/foo.txt` |
 | `data/sub": "files/sub`         | Copy files & folders of source folder to the target folder. | `<project_dir>/vendor/code4nix/super-package/data/sub/*.*` | `<project_dir>/files/sub`     |
