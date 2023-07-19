@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Markocupic\Composer\Plugin\Library;
 
 use Composer\Composer;
+use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 use Symfony\Component\Filesystem\Filesystem;
@@ -29,24 +30,31 @@ class CopyJob
         'delete' => false,
     ];
 
-    protected bool $override = false;
-    protected bool $delete = false;
+    /**
+     * The absolute and canonicalized path to the source located inside the package install path.
+     */
+    protected string|null $strOriginAbsolute;
+
+    /**
+     * The absolute path to the destination.
+     */
+    protected string $strTargetAbsolute;
 
     public function __construct(
-        protected string $strOrigin,
-        protected string $strTarget,
-        protected readonly array $arrFlags,
+        protected readonly string $strOrigin,
+        protected readonly string $strTarget,
+        array $arrOptions,
         protected readonly BasePackage $package,
         protected readonly Composer $composer,
         protected readonly IOInterface $io,
     ) {
-        $this->strOrigin = $this->getPackageInstallerPath().\DIRECTORY_SEPARATOR.$this->strOrigin;
-        $this->strTarget = $this->getRootDir().\DIRECTORY_SEPARATOR.$this->strTarget;
+        $this->strOriginAbsolute = $this->getAbsolutePathForSource($strOrigin, $this->package->getName());
+        $this->strTargetAbsolute = $this->getAbsolutePathForTarget($strTarget, $this->getRootDir());
 
-        // Set options from flags
-        foreach ($this->arrFlags as $flag) {
-            if (isset($this->options[strtolower($flag)])) {
-                $this->options[strtolower($flag)] = true;
+        // Set $this->options from $arrOption
+        foreach ($arrOptions as $option) {
+            if (isset($this->options[strtolower($option)])) {
+                $this->options[strtolower($option)] = true;
             }
         }
     }
@@ -55,45 +63,39 @@ class CopyJob
     {
         $filesystem = new Filesystem();
 
-        if (!$filesystem->isAbsolutePath($this->strOrigin)) {
-            $this->io->write(sprintf('<error> Origin "%s" is not an absolute path. Copy process aborted.</error>', $this->strOrigin));
+        if (null === $this->strOriginAbsolute || false === realpath($this->strOriginAbsolute)) {
+            $this->io->write(sprintf('<error>Could not find the absolute path for the source "%s" inside the package "%s". Maybe it does not exist or the package "%s" is not installed!</error>', $this->strOrigin, $this->package->getName(), $this->package->getName()));
 
             return;
         }
 
-        if (!$filesystem->isAbsolutePath($this->strTarget)) {
-            $this->io->write(sprintf('<error> Target "%s" is not an absolute path. Copy process aborted.</error>', $this->strTarget));
+        if (!$filesystem->isAbsolutePath($this->strTargetAbsolute)) {
+            $this->io->write(sprintf('<error> Target "%s" is not an absolute path. Copy process aborted.</error>', $this->strTargetAbsolute));
 
             return;
         }
 
-        if (!$this->sourceExists($this->strOrigin)) {
-            $this->io->write(sprintf('<error>Copy Folder from %s to %s aborted. Source does not exist.</error>', $this->strOrigin, $this->strTarget));
-
-            return;
-        }
-
-        if (is_file($this->strOrigin)) {
+        if (is_file($this->strOriginAbsolute)) {
             try {
-                $filesystem->copy($this->strOrigin, $this->strTarget, $this->options['override']);
+                $filesystem->copy($this->strOriginAbsolute, $this->strTargetAbsolute, $this->options['override']);
 
                 $this->io->write(
                     sprintf(
                         'Added the <comment>%s</comment> file.',
-                        $this->strTarget,
+                        $this->strTargetAbsolute,
                     ),
                 );
             } catch (\Exception $e) {
                 $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
             }
-        } elseif (is_dir($this->strOrigin)) {
+        } elseif (is_dir($this->strOriginAbsolute)) {
             try {
-                $filesystem->mirror($this->strOrigin, $this->strTarget, null, $this->options);
+                $filesystem->mirror($this->strOriginAbsolute, $this->strTargetAbsolute, null, $this->options);
 
                 $this->io->write(
                     sprintf(
                         'Added the <comment>%s</comment> folder %s.',
-                        $this->strTarget,
+                        $this->strTargetAbsolute,
                         !empty($this->arrFlags) ? ' ['.implode(', ', $this->arrFlags).']' : '',
                     ),
                 );
@@ -103,13 +105,8 @@ class CopyJob
         }
     }
 
-    protected function sourceExists(string $strPath): bool
-    {
-        return false !== realpath($strPath);
-    }
-
     /**
-     * Get the project dir.
+     * Get the root dir from vendor-dir.
      *
      * @throws \Exception
      */
@@ -125,19 +122,24 @@ class CopyJob
     }
 
     /**
-     * Returns the absolute path to the packages installer path
-     * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package.
+     * Returns the canonicalized absolute path of the source
+     * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      *
      * @throws \Exception
      */
-    protected function getPackageInstallerPath(): string
+    protected function getAbsolutePathForSource(string $originPath, string $packageName): string|null
     {
-        $path = $this->composer->getInstallationManager()->getInstaller('library')->getInstallPath($this->package);
+        $packageInstallPath = realpath((string) InstalledVersions::getInstallPath($packageName));
 
-        if (null === $path) {
-            throw new \Exception('Installer path for package '.$this->package->getName().' not found.');
+        if (empty($packageInstallPath)) {
+            return null;
         }
 
-        return $path;
+        return $packageInstallPath.\DIRECTORY_SEPARATOR.$originPath;
+    }
+
+    protected function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
+    {
+        return $rootDir.\DIRECTORY_SEPARATOR.$targetPath;
     }
 }

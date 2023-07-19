@@ -74,17 +74,17 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            ScriptEvents::POST_INSTALL_CMD => 'copyFiles',
-            ScriptEvents::POST_UPDATE_CMD => 'copyFiles',
+            ScriptEvents::POST_INSTALL_CMD => 'copyResources',
+            ScriptEvents::POST_UPDATE_CMD => 'copyResources',
         ];
     }
 
-    public function copyFiles(Event $event): void
+    public function copyResources(Event $event): void
     {
         $composer = $event->getComposer();
         $io = $event->getIO();
 
-        // If root package is not a project, the plugin will not copy files.
+        // If root package is not a project, the plugin does nothing.
         if (!$this->isProject) {
             return;
         }
