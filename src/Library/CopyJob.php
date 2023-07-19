@@ -19,15 +19,26 @@ use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Finder\Finder;
 
 class CopyJob
 {
     public const OVERRIDE = 'OVERRIDE';
     public const DELETE = 'DELETE';
+    public const NAME = 'NAME';
+    public const NOT_NAME = 'NOT_NAME';
+    public const DEPTH = 'DEPTH';
 
     protected array $options = [
         'override' => false,
         'delete' => false,
+    ];
+
+    protected array $filter = [
+        'name' => [],
+        'notName' => [],
+        'depth' => [],
     ];
 
     /**
@@ -44,6 +55,7 @@ class CopyJob
         protected readonly string $strOrigin,
         protected readonly string $strTarget,
         array $arrOptions,
+        array $arrFilter,
         protected readonly BasePackage $package,
         protected readonly Composer $composer,
         protected readonly IOInterface $io,
@@ -51,12 +63,14 @@ class CopyJob
         $this->strOriginAbsolute = $this->getAbsolutePathForSource($strOrigin, $this->package->getName());
         $this->strTargetAbsolute = $this->getAbsolutePathForTarget($strTarget, $this->getRootDir());
 
-        // Set $this->options from $arrOption
-        foreach ($arrOptions as $option) {
-            if (isset($this->options[strtolower($option)])) {
-                $this->options[strtolower($option)] = true;
-            }
-        }
+        // Set $this->options from $arrOptions
+        $this->options['override'] = isset($arrOptions[self::OVERRIDE]) && \is_bool($arrOptions[self::OVERRIDE]) && $arrOptions[self::OVERRIDE];
+        $this->options['delete'] = isset($arrOptions[self::DELETE]) && \is_bool($arrOptions[self::DELETE]) && $arrOptions[self::DELETE];
+
+        // Set $this->filter from $arrFilter
+        $this->filter['name'] = !empty($arrFilter[self::NAME]) && \is_array($arrFilter[self::NAME]) ? $arrFilter[self::NAME] : [];
+        $this->filter['notName'] = !empty($arrFilter[self::NOT_NAME]) && \is_array($arrFilter[self::NOT_NAME]) ? $arrFilter[self::NOT_NAME] : [];
+        $this->filter['depth'] = !empty($arrFilter[self::DEPTH]) && \is_array($arrFilter[self::DEPTH]) ? $arrFilter[self::DEPTH] : [];
     }
 
     public function copyResource(): void
@@ -89,18 +103,66 @@ class CopyJob
                 $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
             }
         } elseif (is_dir($this->strOriginAbsolute)) {
-            try {
-                $filesystem->mirror($this->strOriginAbsolute, $this->strTargetAbsolute, null, $this->options);
+            if (empty($this->filter['name']) && empty($this->filter['notName']) && empty($this->filter['depth'])) {
+                // If no filter is set use Filesystem::mirror().
+                try {
+                    $filesystem->mirror($this->strOriginAbsolute, $this->strTargetAbsolute, null, $this->options);
 
-                $this->io->write(
-                    sprintf(
-                        'Added the <comment>%s</comment> folder %s.',
-                        $this->strTargetAbsolute,
-                        !empty($this->arrFlags) ? ' ['.implode(', ', $this->arrFlags).']' : '',
-                    ),
-                );
-            } catch (\Exception $e) {
-                $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+                    $this->io->write(
+                        sprintf(
+                            'Added the <comment>%s</comment> folder %s.',
+                            $this->strTargetAbsolute,
+                            !empty($this->arrFlags) ? ' ['.implode(', ', $this->arrFlags).']' : '',
+                        ),
+                    );
+                } catch (\Exception $e) {
+                    $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+                }
+            } else {
+                // Disable the delete option
+
+                $this->options['delete'] = false;
+                $finder = new Finder();
+
+                $finder->in($this->strOriginAbsolute);
+                $finder->files();
+
+                if (!empty($this->filter['depth'])) {
+                    $finder->depth($this->filter['depth']);
+                }
+
+                if (!empty($this->filter['name'])) {
+                    $finder->name($this->filter['name']);
+                }
+
+                if (!empty($this->filter['notName'])) {
+                    $finder->notName($this->filter['notName']);
+                }
+
+                $results = [];
+
+                // check if there are any search results
+                if ($finder->hasResults()) {
+                    foreach ($finder as $file) {
+                        $results[$file->getRealPath()] = $file->getRelativePathname();
+                    }
+                }
+
+                foreach ($results as $absolutePath => $relativePath) {
+                    try {
+                        $targetPathAbsolute = $this->strTargetAbsolute.\DIRECTORY_SEPARATOR.$relativePath;
+                        $filesystem->copy($absolutePath, $targetPathAbsolute, $this->options['override']);
+
+                        $this->io->write(
+                            sprintf(
+                                'Added the <comment>%s</comment> file.',
+                                $targetPathAbsolute,
+                            ),
+                        );
+                    } catch (\Exception $e) {
+                        $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+                    }
+                }
             }
         }
     }
@@ -124,22 +186,33 @@ class CopyJob
     /**
      * Returns the canonicalized absolute path of the source
      * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
-     *
-     * @throws \Exception
      */
-    protected function getAbsolutePathForSource(string $originPath, string $packageName): string|null
+    protected static function getAbsolutePathForSource(string $originPath, string $packageName): string|null
     {
+        if (Path::isAbsolute($originPath)) {
+            return $originPath;
+        }
+
+        // Get the installation path of the package that includes the source
         $packageInstallPath = realpath((string) InstalledVersions::getInstallPath($packageName));
 
         if (empty($packageInstallPath)) {
             return null;
         }
 
-        return $packageInstallPath.\DIRECTORY_SEPARATOR.$originPath;
+        return Path::makeAbsolute($originPath, $packageInstallPath);
     }
 
-    protected function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
+    /**
+     * Returns the canonicalized absolute path of the source
+     * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
+     */
+    protected static function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
     {
-        return $rootDir.\DIRECTORY_SEPARATOR.$targetPath;
+        if (!Path::isAbsolute($targetPath)) {
+            $targetPath = Path::makeAbsolute($targetPath, $rootDir);
+        }
+
+        return $targetPath;
     }
 }

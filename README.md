@@ -2,27 +2,42 @@
 
 # Composer File Copier Plugin
 
-Let's assume you have developed a **composer package** and you want files from the package to be copied to a defined location in the local file system after each `composer update` and `composer install`, then this **composer plugin** can do this work for you.
+Let's assume you have developed a **composer package**, and you want files from the package to be copied to a defined location in the local file system after each `post-install-cmd` and `post-update-cmd`, then this **composer plugin** can do this work for you.
 
-The configuration is made with the extra key of the composer.json file of the respective composer package.
+The configuration is made inside the extra key of the composer.json of the respective composer package.
 
 > Note that this is a very **powerful but also dangerous tool** that can **delete directories** and **destroy your installation** if you do not care.
 
-### Your package
+### Installation
+
+`composer require markocupic/composer-file-copier-plugin`
+
+
+### Build your composer package
 ```
 <project_root>/
+├── app/
+├── public/
 └── vendor/
     └── code4nix/
         └── super-package/
+            ├── .github/
             ├── src/
+            ├── tests/
             ├── data/
-            │   ├── foo.txt # File to be copied after composer install/update
-            │   ├── test1/
-            │   │   └── foo1.txt
-            │   └── test2/
-            │       └── foo2.txt
-            ├── ...
-            └── composer.json # Configuration is made here
+            │   ├── foo.txt
+            │   ├── style.css
+            │   ├── config.yaml
+            │   └── test1/
+            │       ├── foo1.txt
+            │       ├── style1.css
+            │       ├── config1.yaml
+            │       └── test2/
+            │           ├── foo2.txt
+            │           ├── style2.css
+            │           └── config2.yaml
+            └── composer.json    # configuration goes here!
+
 ```
 <small>Big thanks to https://tree.nathanfriend.io/ for sharing this fancy tree generator. :heart:</small>
 
@@ -33,7 +48,7 @@ The configuration is made inside the **extra key** of the **composer.json** file
 
 > Note! The **source path** are relative to the installation directory of your package.
 
-> Note! The **target path** are relative to the project root directory of your package.
+> Note! The **target path** are relative to the project root.
 
 Inside the **composer.json** of your package:
 ```json
@@ -58,17 +73,34 @@ Inside the **composer.json** of your package:
             {
                 "source": "data/foo.txt",
                 "target": "foo.txt",
-                "options": "OVERRIDE"
+                "options": {
+                    "OVERRIDE": true
+                }
             },
             {
                 "source": "data/test1",
                 "target": "files/test1",
-                "options": "OVERRIDE"
+                "options": {
+                    "OVERRIDE": true,
+                    "DELETE": true
+                }
             },
             {
-                "source": "data/test2",
-                "target": "files/test2",
-                "options": "OVERRIDE,DELETE"
+                "source": "data",
+                "target": "files/data",
+                "options": {
+                    "OVERRIDE": true
+                },
+                "filter": {
+                    "NAME": [
+                        "*.css",
+                        "*.yaml"
+                    ],
+                    "DEPTH": [
+                        "> 1",
+                        "< 3"
+                    ]
+                }
             }
         ]
     }
@@ -76,17 +108,25 @@ Inside the **composer.json** of your package:
 
 
 ```
-| source & target                 | explain                                                                                                         | source (inside package)                                       | target (local file system)    |
-|---------------------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|-------------------------------|
-| `data/foo.txt -> files/foo.txt` | Copy file from source to target. Source and target must contain a valid file path.                              | `<project_root>/vendor/code4nix/super-package/data/foo.txt`   | `<project_dir>/files/foo.txt` |
-| `data/test1 -> files/test1`     | Copy the content of the source folder to the target folder. Source and target must contain a valid folder path. | `<project_root>/vendor/code4nix/super-package/data/test1/*.*` | `<project_dir>/files/test1`   |
+
+| Mandatory keys | Description                                                                                                                                                                                |
+|----------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `source`       | Add a path to a file or directory. The path you set is relative to the package root.                                                                                                       |
+| `target`       | Add a path to a file or directory. If the source path points to a file, then the destination path should point to a file as well. The target path is always relative to the document root. |
 
 
 #### Options
 
-Use the `OVERRIDE` flag to define whether newer files in the destination folder should be overwritten. Use the `DELETE` flag if target files, that are not available in the source directory, should be deleted.
+| Option     | Description                                                                                                                                                                                       | Affects         |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                               | files & folders |
+| `DELETE`   | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters. | folders         |
 
-| Flag     | Description                                                  | Affects         |
-|----------|--------------------------------------------------------------|-----------------|
-| OVERRIDE | overwrite existing newer files in target directory           | files & folders |
-| DELETE   | Whether to delete files that are not in the source directory | folders         |
+
+#### Filters
+
+| Filter     | Description                                                                                                                                              |
+|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `NAME`     | Accepted values: array `"NAME": ["*.less","*.json"]`. See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#file-name) component.  |
+| `NOT_NAME` | Accepted values: array `"NOT_NAME": ["*.php","*.js"]`. See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#file-name) component. |
+| `DEPTH`    | Accepted values: array `"DEPTH": ["< 1","> 4"]` See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#directory-depth) component.  |

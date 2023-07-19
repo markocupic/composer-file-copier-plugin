@@ -20,9 +20,15 @@ use Composer\Package\BasePackage;
 
 class Processor
 {
-    public const COPY_FLAGS = [
+    public const COPY_OPTIONS = [
         CopyJob::OVERRIDE,
         CopyJob::DELETE,
+    ];
+
+    public const FILTERS = [
+        CopyJob::NOT_NAME,
+        CopyJob::NAME,
+        CopyJob::DEPTH,
     ];
 
     public function __construct(
@@ -47,7 +53,7 @@ class Processor
                     ),
                 );
 
-                foreach ($arrSources as $arrSource) {
+                foreach ($arrSources as $k => $arrSource) {
                     if (empty($arrSource['source'])) {
                         throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The source key must contain a file or folder path.', $this->package->getName()));
                     }
@@ -60,16 +66,14 @@ class Processor
 
                     $target = $arrSource['target'];
 
-                    $arrOptions = !empty($arrSource['options']) ? explode(',', (string) $arrSource['options']) : [];
-                    $arrOptions = array_filter(array_unique(array_map('strtoupper', $arrOptions)));
+                    $arrOptions = $arrSource['options'] ?? [];
+                    $this->checkOptions($arrOptions);
 
-                    if (!empty($arrOptions)) {
-                        if (!$this->checkOptions($arrOptions)) {
-                            throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The options key may contain a comma separated string with one ore more of these values: "%s".', $this->package->getName(), implode(',', self::COPY_FLAGS)));
-                        }
-                    }
+                    $arrFilter = $arrSource['filter'] ?? [];
+                    $this->checkFilters($arrFilter);
 
-                    $copyJob = new CopyJob($origin, $target, $arrOptions, $this->package, $this->composer, $this->io);
+                    // Call the copy class
+                    $copyJob = new CopyJob($origin, $target, $arrOptions, $arrFilter, $this->package, $this->composer, $this->io);
                     $copyJob->copyResource();
                 }
 
@@ -109,8 +113,55 @@ class Processor
         return [];
     }
 
-    protected function checkOptions(array $arrCOPY_FLAGS): bool
+    protected function checkOptions(array $arrOptions): bool
     {
-        return \count(array_intersect($arrCOPY_FLAGS, self::COPY_FLAGS)) === \count($arrCOPY_FLAGS);
+        if (isset($arrOptions[CopyJob::OVERRIDE])) {
+            if (!\is_bool($arrOptions[CopyJob::OVERRIDE])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.OVERRIDE must be of type boolean (true or false) %s given.', $this->package->getName(), \gettype($arrOptions[CopyJob::OVERRIDE])));
+            }
+        }
+
+        if (isset($arrOptions[CopyJob::DELETE])) {
+            if (!\is_bool($arrOptions[CopyJob::DELETE])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.DELETE must be of type boolean (true or false) %s given.', $this->package->getName(), \gettype($arrOptions[CopyJob::DELETE])));
+            }
+        }
+
+        foreach (array_keys($arrOptions) as $key) {
+            if (!\in_array($key, self::COPY_OPTIONS, true)) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.%s is not allowed.', $this->package->getName(), $key));
+            }
+        }
+
+        return true;
+    }
+
+    protected function checkFilters(array $arrFilter): bool
+    {
+        if (isset($arrFilter[CopyJob::NAME])) {
+            if (!\is_array($arrFilter[CopyJob::NAME]) || empty($arrFilter[CopyJob::NAME])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.NAME entry must contain an array of strings.', $this->package->getName()));
+            }
+        }
+
+        if (isset($arrFilter[CopyJob::NOT_NAME])) {
+            if (!\is_array($arrFilter[CopyJob::NOT_NAME]) || empty($arrFilter[CopyJob::NOT_NAME])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.NOT_NAME entry must contain an array of strings.', $this->package->getName()));
+            }
+        }
+
+        if (isset($arrFilter[CopyJob::DEPTH])) {
+            if (!\is_array($arrFilter[CopyJob::DEPTH]) || empty($arrFilter[CopyJob::DEPTH])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.DEPTH entry must contain an array of strings.', $this->package->getName()));
+            }
+        }
+
+        foreach (array_keys($arrFilter) as $key) {
+            if (!\in_array($key, self::FILTERS, true)) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.%s is not allowed.', $this->package->getName(), $key));
+            }
+        }
+
+        return true;
     }
 }
