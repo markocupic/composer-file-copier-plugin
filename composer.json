@@ -1,13 +1,14 @@
 {
     "name": "markocupic/composer-file-copier-plugin",
-    "description": "Copy files or mirroring folders from a package dist directory to the filesystem during 'composer install' or 'composer update'.",
+    "description": "Copy files or mirroring folders from a package dist directory to the filesystem during 'composer-install-cmd' or 'composer-update-cmd'.",
     "type": "composer-plugin",
     "homepage": "https://github.com/markocupic/composer-file-copier-plugin",
     "license": "MIT",
     "require": {
         "php": "^8.1",
-        "composer-plugin-api": "^2.0",
-        "symfony/filesystem": "^4.0 || ^5.0 || ^6.0"
+        "composer-plugin-api": "^2.1",
+        "symfony/filesystem": "^5.0 || ^6.0 || ^7.0",
+        "symfony/finder": "^5.0 || ^6.0 || ^7.0"
     },
     "require-dev": {
         "composer/composer": "^2.0"
