@@ -12,8 +12,8 @@ The configuration is made inside the extra key of the composer.json of the respe
 
 `composer require markocupic/composer-file-copier-plugin`
 
-
 ### Build your composer package
+
 ```
 <project_root>/
 ├── app/
@@ -39,8 +39,12 @@ The configuration is made inside the extra key of the composer.json of the respe
             └── composer.json    # configuration goes here!
 
 ```
-<small>Big thanks to https://tree.nathanfriend.io/ for sharing this fancy tree generator. :heart:</small>
 
+<small>Big thanks to https://tree.nathanfriend.io for sharing this fancy tree generator. :heart:</small>
+<!--
+Edit the tree with this link:
+https://tree.nathanfriend.io/?s=(%27optiHs!(%27fancy!true~fullPath!false~trailingSlash!true~rootDot!false)~F(%27F%27%3Cproject_root%3E3app3public3vendor3*code4nix36super-package5.github5src5Es5data5*fooA*8B*790*E156foo1A681B671966G06E25Gfoo2AG82BG729G0composer.jsH66%23%207uratiH%20goes%20here%27%3AC*%27)~versiH!%271%27)*%20%200C663%2FC*5%2F0G*7cHfig8style9.yamlA.txt0B.css0C%5CnEtestFsource!G6*Hon%01HGFECBA9876530*
+-->
 
 ### Configuration
 
@@ -51,6 +55,7 @@ The configuration is made inside the **extra key** of the **composer.json** file
 > Note! The **target path** are relative to the project root.
 
 Inside the **composer.json** of your package:
+
 ```json
 {
     "name": "code4nix/super-package",
@@ -114,14 +119,12 @@ Inside the **composer.json** of your package:
 | `source`       | Add a path to a file or directory. The path you set is relative to the package root.                                                                                                       |
 | `target`       | Add a path to a file or directory. If the source path points to a file, then the destination path should point to a file as well. The target path is always relative to the document root. |
 
-
 #### Options
 
 | Option     | Description                                                                                                                                                                                       | Affects         |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                               | files & folders |
 | `DELETE`   | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters. | folders         |
-
 
 #### Filters
 
