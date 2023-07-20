@@ -2,17 +2,15 @@
 
 # Composer File Copier Plugin
 
-Let's assume you have developed a **composer package**, and you want files from the package to be copied to a defined location in the local file system after each `post-install-cmd` and `post-update-cmd`, then this **composer plugin** can do this work for you.
+Let's assume you have developed a **composer package**. Now you want selected files inside your package to be copied to a defined location on your local file system after each `post-install-cmd` and `post-update-cmd` event. With a bit of configuration this **composer plugin** can do this job for you.
 
-The configuration is made inside the extra key of the composer.json of the respective composer package.
+The configuration is made inside the [extra](https://getcomposer.org/doc/04-schema.md#extra) key of the `composer.json` file of your freshly programmed composer package.
 
-> Note that this is a very **powerful but also dangerous tool** that can **delete directories** and **destroy your installation** if you do not care.
-
-### Installation
+## Installation
 
 `composer require markocupic/composer-file-copier-plugin`
 
-### Build your composer package
+## Build your composer package
 
 ```
 <project_root>/
@@ -39,20 +37,19 @@ The configuration is made inside the extra key of the composer.json of the respe
             └── composer.json    # configuration goes here!
 
 ```
-
 <small>Big thanks to https://tree.nathanfriend.io for sharing this fancy tree generator. :heart:</small>
 <!--
 Edit the tree with this link:
 https://tree.nathanfriend.io/?s=(%27optiHs!(%27fancy!true~fullPath!false~trailingSlash!true~rootDot!false)~F(%27F%27%3Cproject_root%3E3app3public3vendor3*code4nix36super-package5.github5src5Es5data5*fooA*8B*790*E156foo1A681B671966G06E25Gfoo2AG82BG729G0composer.jsH66%23%207uratiH%20goes%20here%27%3AC*%27)~versiH!%271%27)*%20%200C663%2FC*5%2F0G*7cHfig8style9.yamlA.txt0B.css0C%5CnEtestFsource!G6*Hon%01HGFECBA9876530*
 -->
 
-### Configuration
+## Configuration
 
 The configuration is made inside the **extra key** of the **composer.json** file inside your **composer package**.
 
-> Note! The **source path** are relative to the installation directory of your package.
+> Note, that **source paths** are always relative to the installation directory of your package.
 
-> Note! The **target path** are relative to the project root.
+> Note, that **target paths** are always relative to the project root.
 
 Inside the **composer.json** of your package:
 
@@ -62,7 +59,7 @@ Inside the **composer.json** of your package:
     "type": "symfony-bundle",
     "require": {
         "php": "^8.1",
-        "markocupic/composer-file-copier-plugin": "^1.0"
+        "markocupic/composer-file-copier-plugin": "^0.1"
     },
     "autoload": {
         "psr-4": {
@@ -119,17 +116,20 @@ Inside the **composer.json** of your package:
 | `source`       | Add a path to a file or directory. The path you set is relative to the package root.                                                                                                       |
 | `target`       | Add a path to a file or directory. If the source path points to a file, then the destination path should point to a file as well. The target path is always relative to the document root. |
 
-#### Options
+### Options
 
 | Option     | Description                                                                                                                                                                                       | Affects         |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                               | files & folders |
 | `DELETE`   | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters. | folders         |
 
-#### Filters
+### Filters
 
 | Filter     | Description                                                                                                                                              |
 |------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `NAME`     | Accepted values: array `"NAME": ["*.less","*.json"]`. See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#file-name) component.  |
 | `NOT_NAME` | Accepted values: array `"NOT_NAME": ["*.php","*.js"]`. See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#file-name) component. |
 | `DEPTH`    | Accepted values: array `"DEPTH": ["< 1","> 4"]` See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#directory-depth) component.  |
+
+## :warning: Last but not least!
+> Note, that this is a very **powerful but also dangerous tool** that can **OVERRIDE/DELETE files/folders** and **DESTROY/DAMAGE your installation** if wrongly applied.
