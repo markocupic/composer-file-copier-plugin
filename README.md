@@ -131,5 +131,16 @@ Inside the **composer.json** of your package:
 | `NOT_NAME` | Accepted values: array `"NOT_NAME": ["*.php","*.js"]`. See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#file-name) component. |
 | `DEPTH`    | Accepted values: array `"DEPTH": ["< 1","> 4"]` See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#directory-depth) component.  |
 
+## Additional configuration
+By default this package will not process the following package types: `library','metapackage','composer-plugin','project'`.  
+This can be overridden in your composer.json by specifying which package to exclude:
+```json
+{
+    "extra": {
+        "composer-file-copier-excluded": ["library", "metapackage", "composer-plugin"]
+    }
+}
+```
+
 ## :warning: Last but not least!
 > Note, that this is a very **powerful but also dangerous tool** that can **OVERRIDE/DELETE files/folders** and **DESTROY/DAMAGE your installation** if wrongly applied.

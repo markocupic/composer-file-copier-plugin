@@ -31,11 +31,24 @@ class Processor
         CopyJob::DEPTH,
     ];
 
+    /**
+     * List of excluded composer types to not process by default.
+     *
+     * Can be overridden in config by defining "composer-file-copier-excluded" under extra.
+     */
+    protected array $excludedTypes = [
+        'library',
+        'metapackage',
+        'composer-plugin',
+        'project'
+    ];
+
     public function __construct(
         protected readonly BasePackage $package,
         protected readonly Composer $composer,
         protected readonly IOInterface $io,
     ) {
+        $this->excludedTypes = $this->getExcludedComposerTypes();
     }
 
     public function copyResources(): void
@@ -84,9 +97,7 @@ class Processor
 
     protected function supports(): bool
     {
-        $exclude = ['library', 'project', 'metapackage', 'composer-plugin'];
-
-        if (\in_array(strtolower($this->package->getType()), $exclude, true)) {
+        if (\in_array(strtolower($this->package->getType()), $this->excludedTypes, true)) {
             return false;
         }
 
@@ -111,6 +122,24 @@ class Processor
         }
 
         return [];
+    }
+
+    /**
+     * Retrieves the list of excluded composer package types if overridden in config.
+     */
+    protected function getExcludedComposerTypes(): array
+    {
+        $extra = $this->package->getExtra();
+
+        if (!empty($extra) && !empty($extra['composer-file-copier-excluded'])) {
+            if (!\is_array($extra['composer-file-copier-excluded'])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-excluded configuration inside composer.json of package "%s". The key must contain an array with a configuration object.', $this->package->getName()));
+            }
+
+            return $extra['composer-file-copier-excluded'];
+        }
+
+        return $this->excludedTypes;
     }
 
     protected function checkOptions(array $arrOptions): bool
