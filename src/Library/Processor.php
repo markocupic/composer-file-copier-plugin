@@ -40,7 +40,7 @@ class Processor
         'library',
         'metapackage',
         'composer-plugin',
-        'project'
+        'project',
     ];
 
     public function __construct(
@@ -66,7 +66,7 @@ class Processor
                     ),
                 );
 
-                foreach ($arrSources as $k => $arrSource) {
+                foreach ($arrSources as $arrSource) {
                     if (empty($arrSource['source'])) {
                         throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The source key must contain a file or folder path.', $this->package->getName()));
                     }
