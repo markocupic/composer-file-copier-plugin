@@ -118,10 +118,11 @@ Inside the **composer.json** of your package:
 
 ### Options
 
-| Option     | Description                                                                                                                                                                                       | Affects         |
-|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
-| `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                               | files & folders |
-| `DELETE`   | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters. | folders         |
+| Option    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Affects         |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                                                                                                                                                                                                                                                                                                                                                                             | files & folders |
+| `DELETE`  | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters.                                                                                                                                                                                                                                                                                                                                               | folders         |
+| `MERGE`   | Merges source file with target file if it already exists. Accepted values: string <br/>- `replace`: Similar to PHP array merge, will replace any existing keys in target (Only formats supported `.json`). <br/>- `preserve`: Similar to PHP array merge, will preserve any existing keys in target (Only formats supported `.json`). <br/>- `none`: Does not merge. <br/>Defaults to `none` . | files           |
 
 ### Filters
 
@@ -132,7 +133,7 @@ Inside the **composer.json** of your package:
 | `DEPTH`    | Accepted values: array `"DEPTH": ["< 1","> 4"]` See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#directory-depth) component.  |
 
 ## Additional configuration
-By default this package will not process the following package types: `library','metapackage','composer-plugin','project'`.  
+By default this package will not process the following package types: `library','metapackage','composer-plugin','project'`.
 This can be overridden in your composer.json by specifying which package to exclude:
 ```json
 {

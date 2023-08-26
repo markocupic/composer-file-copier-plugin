@@ -18,10 +18,14 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 
+/**
+ * File processor.
+ */
 class Processor
 {
     public const COPY_OPTIONS = [
         CopyJob::OVERRIDE,
+        CopyJob::MERGE,
         CopyJob::DELETE,
     ];
 
@@ -153,6 +157,15 @@ class Processor
         if (isset($arrOptions[CopyJob::DELETE])) {
             if (!\is_bool($arrOptions[CopyJob::DELETE])) {
                 throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.DELETE must be of type boolean (true or false) %s given.', $this->package->getName(), \gettype($arrOptions[CopyJob::DELETE])));
+            }
+        }
+
+        if (isset($arrOptions[CopyJob::MERGE])) {
+            if (!\is_string($arrOptions[CopyJob::MERGE])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.MERGE must be of type string, %s given.', $this->package->getName(), \gettype($arrOptions[CopyJob::MERGE])));
+            }
+            if (!\in_array($arrOptions[CopyJob::MERGE], MergeJob::MERGE_METHODS)) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.MERGE must be a supported value: %s', $this->package->getName(), join(',', MergeJob::MERGE_METHODS)));
             }
         }
 

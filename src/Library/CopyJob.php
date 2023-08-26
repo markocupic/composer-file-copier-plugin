@@ -26,6 +26,7 @@ class CopyJob
 {
     public const OVERRIDE = 'OVERRIDE';
     public const DELETE = 'DELETE';
+    public const MERGE = 'MERGE';
     public const NAME = 'NAME';
     public const NOT_NAME = 'NOT_NAME';
     public const DEPTH = 'DEPTH';
@@ -33,6 +34,7 @@ class CopyJob
     protected array $options = [
         'override' => false,
         'delete' => false,
+        'merge' => 'none',
     ];
 
     protected array $filter = [
@@ -65,6 +67,7 @@ class CopyJob
 
         // Set $this->options from $arrOptions
         $this->options['override'] = isset($arrOptions[self::OVERRIDE]) && \is_bool($arrOptions[self::OVERRIDE]) && $arrOptions[self::OVERRIDE];
+        $this->options['merge'] = isset($arrOptions[self::MERGE]) && \is_string($arrOptions[self::MERGE]) ? $arrOptions[self::MERGE] : $this->options['merge'];
         $this->options['delete'] = isset($arrOptions[self::DELETE]) && \is_bool($arrOptions[self::DELETE]) && $arrOptions[self::DELETE];
 
         // Set $this->filter from $arrFilter
@@ -90,17 +93,9 @@ class CopyJob
         }
 
         if (is_file($this->strOriginAbsolute)) {
-            try {
-                $filesystem->copy($this->strOriginAbsolute, $this->strTargetAbsolute, $this->options['override']);
-
-                $this->io->write(
-                    sprintf(
-                        'Added the <comment>%s</comment> file.',
-                        $this->strTargetAbsolute,
-                    ),
-                );
-            } catch (\Exception $e) {
-                $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+            // Only copy file if should not get merged.
+            if (!$this->performMergeJob($filesystem, $this->strOriginAbsolute, $this->strTargetAbsolute)) {
+                $this->copyFile($filesystem, $this->strOriginAbsolute, $this->strTargetAbsolute);
             }
         } elseif (is_dir($this->strOriginAbsolute)) {
             if (empty($this->filter['name']) && empty($this->filter['notName']) && empty($this->filter['depth'])) {
@@ -149,21 +144,58 @@ class CopyJob
                 }
 
                 foreach ($results as $absolutePath => $relativePath) {
-                    try {
-                        $targetPathAbsolute = $this->strTargetAbsolute.\DIRECTORY_SEPARATOR.$relativePath;
-                        $filesystem->copy($absolutePath, $targetPathAbsolute, $this->options['override']);
-
-                        $this->io->write(
-                            sprintf(
-                                'Added the <comment>%s</comment> file.',
-                                $targetPathAbsolute,
-                            ),
-                        );
-                    } catch (\Exception $e) {
-                        $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+                    $targetPathAbsolute = $this->strTargetAbsolute.\DIRECTORY_SEPARATOR.$relativePath;
+                    // Only copy file if should not get merged.
+                    if (!$this->performMergeJob($filesystem, $absolutePath, $targetPathAbsolute)) {
+                        $this->copyFile($filesystem, $absolutePath, $this->strTargetAbsolute);
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Perform the actual file copy with option to override if exists.
+     */
+    protected function copyFile(Filesystem $filesystem, string $originPath, string $targetPath)
+    {
+        try {
+            $filesystem->copy($originPath, $targetPath, $this->options['override']);
+
+            $this->io->write(
+                sprintf(
+                    'Added the <comment>%s</comment> file.',
+                    $targetPath,
+                ),
+            );
+        } catch (\Exception $e) {
+            $this->io->write(sprintf('<error>Copy process aborted with error "%s" for source file "%s".</error>', $e->getMessage(), $originPath));
+        }
+    }
+
+    /**
+     * Performs a merge job if conditions are met.
+     */
+    protected function performMergeJob(Filesystem $filesystem, string $originPath, string $targetPath): bool
+    {
+        try {
+            $mergeJob = new MergeJob($originPath, $targetPath, $this->options['merge']);
+            if ($mergeJob->shouldMerge($filesystem) && $mergeJob->checkSupportedExtension()) {
+                $mergeJob->mergeResource($filesystem);
+
+                $this->io->write(
+                    sprintf(
+                        'Merged the <comment>%s</comment> file.',
+                        $targetPath,
+                    ),
+                );
+
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            $this->io->write(sprintf('<error>File merging process aborted with error "%s" for source file "%s".</error>', $e->getMessage(), $originPath));
         }
     }
 
