@@ -219,7 +219,7 @@ class CopyJob
      * Returns the canonicalized absolute path of the source
      * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
-    protected static function getAbsolutePathForSource(string $originPath, string $packageName): string|null
+    protected function getAbsolutePathForSource(string $originPath, string $packageName): string|null
     {
         if (Path::isAbsolute($originPath)) {
             return $originPath;
@@ -239,7 +239,7 @@ class CopyJob
      * Returns the canonicalized absolute path of the source
      * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
-    protected static function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
+    protected function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
     {
         if (!Path::isAbsolute($targetPath)) {
             $targetPath = Path::makeAbsolute($targetPath, $rootDir);
