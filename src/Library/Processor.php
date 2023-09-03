@@ -18,10 +18,14 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 
-class Processor
+/**
+ * File processor.
+ */
+final class Processor
 {
     public const COPY_OPTIONS = [
         CopyJob::OVERRIDE,
+        CopyJob::MERGE,
         CopyJob::DELETE,
     ];
 
@@ -146,19 +150,29 @@ class Processor
     {
         if (isset($arrOptions[CopyJob::OVERRIDE])) {
             if (!\is_bool($arrOptions[CopyJob::OVERRIDE])) {
-                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.OVERRIDE must be of type boolean (true or false) %s given.', $this->package->getName(), \gettype($arrOptions[CopyJob::OVERRIDE])));
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The options.OVERRIDE must be of type boolean (true or false) "%s" given.', $this->package->getName(), \gettype($arrOptions[CopyJob::OVERRIDE])));
             }
         }
 
         if (isset($arrOptions[CopyJob::DELETE])) {
             if (!\is_bool($arrOptions[CopyJob::DELETE])) {
-                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.DELETE must be of type boolean (true or false) %s given.', $this->package->getName(), \gettype($arrOptions[CopyJob::DELETE])));
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The options.DELETE must be of type boolean (true or false) "%s" given.', $this->package->getName(), \gettype($arrOptions[CopyJob::DELETE])));
+            }
+        }
+
+        if (isset($arrOptions[CopyJob::MERGE])) {
+            if (!\is_string($arrOptions[CopyJob::MERGE])) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The options.MERGE must be of type string, "%s" given.', $this->package->getName(), \gettype($arrOptions[CopyJob::MERGE])));
+            }
+
+            if (!\in_array($arrOptions[CopyJob::MERGE], MergeJob::MERGE_METHODS, true)) {
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The options.MERGE must be a supported value: %s, "%s" given.', $this->package->getName(), implode(',', MergeJob::MERGE_METHODS), $arrOptions[CopyJob::MERGE]));
             }
         }
 
         foreach (array_keys($arrOptions) as $key) {
             if (!\in_array($key, self::COPY_OPTIONS, true)) {
-                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.%s is not allowed.', $this->package->getName(), $key));
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The options.%s is not allowed.', $this->package->getName(), $key));
             }
         }
 
@@ -169,19 +183,19 @@ class Processor
     {
         if (isset($arrFilter[CopyJob::NAME])) {
             if (!\is_array($arrFilter[CopyJob::NAME]) || empty($arrFilter[CopyJob::NAME])) {
-                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.NAME entry must contain an array of strings.', $this->package->getName()));
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.NAME entry must be an array of strings.', $this->package->getName()));
             }
         }
 
         if (isset($arrFilter[CopyJob::NOT_NAME])) {
             if (!\is_array($arrFilter[CopyJob::NOT_NAME]) || empty($arrFilter[CopyJob::NOT_NAME])) {
-                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.NOT_NAME entry must contain an array of strings.', $this->package->getName()));
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.NOT_NAME entry must be an array of strings.', $this->package->getName()));
             }
         }
 
         if (isset($arrFilter[CopyJob::DEPTH])) {
             if (!\is_array($arrFilter[CopyJob::DEPTH]) || empty($arrFilter[CopyJob::DEPTH])) {
-                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.DEPTH entry must contain an array of strings.', $this->package->getName()));
+                throw new \InvalidArgumentException(sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The filter.DEPTH entry must be an array of strings.', $this->package->getName()));
             }
         }
 
