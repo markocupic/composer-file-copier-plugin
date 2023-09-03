@@ -31,13 +31,13 @@ final class CopyJob
     public const NOT_NAME = 'NOT_NAME';
     public const DEPTH = 'DEPTH';
 
-    private array $options = [
+    protected array $options = [
         'override' => false,
         'delete' => false,
         'merge' => 'preserve',
     ];
 
-    private array $filter = [
+    protected array $filter = [
         'name' => [],
         'notName' => [],
         'depth' => [],
@@ -46,21 +46,21 @@ final class CopyJob
     /**
      * The absolute and canonicalized path to the source located inside the package install path.
      */
-    private string|null $strOriginAbsolute;
+    protected string|null $strOriginAbsolute;
 
     /**
      * The absolute path to the target.
      */
-    private string $strTargetAbsolute;
+    protected string $strTargetAbsolute;
 
     public function __construct(
-        private readonly string $strOrigin,
-        private readonly string $strTarget,
+        protected readonly string $strOrigin,
+        protected readonly string $strTarget,
         array $arrOptions,
         array $arrFilter,
-        private readonly BasePackage $package,
-        private readonly Composer $composer,
-        private readonly IOInterface $io,
+        protected readonly BasePackage $package,
+        protected readonly Composer $composer,
+        protected readonly IOInterface $io,
     ) {
         $this->strOriginAbsolute = $this->getAbsolutePathForSource($strOrigin, $this->package->getName());
         $this->strTargetAbsolute = $this->getAbsolutePathForTarget($strTarget, $this->getRootDir());
@@ -157,7 +157,7 @@ final class CopyJob
     /**
      * Perform the actual file copy with option to override if exists.
      */
-    private function copyFile(Filesystem $filesystem, string $originPath, string $targetPath): void
+    protected function copyFile(Filesystem $filesystem, string $originPath, string $targetPath): void
     {
         try {
             $filesystem->copy($originPath, $targetPath, $this->options['override']);
@@ -176,7 +176,7 @@ final class CopyJob
     /**
      * Performs a merge job if conditions are met.
      */
-    private function performMergeJob(Filesystem $filesystem, string $originPath, string $targetPath): bool
+    protected function performMergeJob(Filesystem $filesystem, string $originPath, string $targetPath): bool
     {
         try {
             $mergeJob = new MergeJob($originPath, $targetPath, $this->options['merge']);
@@ -205,7 +205,7 @@ final class CopyJob
      *
      * @throws \Exception
      */
-    private function getRootDir(): string
+    protected function getRootDir(): string
     {
         $rootDir = realpath(\dirname($this->composer->getConfig()->get('vendor-dir')));
 
@@ -220,7 +220,7 @@ final class CopyJob
      * Returns the canonicalized absolute path of the source
      * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
-    private function getAbsolutePathForSource(string $originPath, string $packageName): string|null
+    protected function getAbsolutePathForSource(string $originPath, string $packageName): string|null
     {
         if (Path::isAbsolute($originPath)) {
             return $originPath;
@@ -240,7 +240,7 @@ final class CopyJob
      * Returns the canonicalized absolute path of the source
      * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
-    private function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
+    protected function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
     {
         if (!Path::isAbsolute($targetPath)) {
             $targetPath = Path::makeAbsolute($targetPath, $rootDir);

@@ -41,19 +41,19 @@ final class MergeJob
     /**
      * Map of merger classes with their supported extensions.
      */
-    private const MERGER_EXTENSION_MAP = [
+    protected const MERGER_EXTENSION_MAP = [
         JsonFileMerger::class => [JsonFileMerger::SUPPORTS_FILE_EXTENSION],
     ];
 
     /**
      * Extension of origin file to be merged.
      */
-    private string $originExtension;
+    protected string $originExtension;
 
     /**
      * Extension of target file already present.
      */
-    private string $targetExtension;
+    protected string $targetExtension;
 
     public function __construct(
         protected readonly string $originPath,

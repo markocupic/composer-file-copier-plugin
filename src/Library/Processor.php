@@ -40,7 +40,7 @@ final class Processor
      *
      * Can be overridden in config by defining "composer-file-copier-excluded" under extra.
      */
-    private array $excludedTypes = [
+    protected array $excludedTypes = [
         'library',
         'metapackage',
         'composer-plugin',
@@ -48,9 +48,9 @@ final class Processor
     ];
 
     public function __construct(
-        private readonly BasePackage $package,
-        private readonly Composer $composer,
-        private readonly IOInterface $io,
+        protected readonly BasePackage $package,
+        protected readonly Composer $composer,
+        protected readonly IOInterface $io,
     ) {
         $this->excludedTypes = $this->getExcludedComposerTypes();
     }
@@ -99,7 +99,7 @@ final class Processor
         }
     }
 
-    private function supports(): bool
+    protected function supports(): bool
     {
         if (\in_array(strtolower($this->package->getType()), $this->excludedTypes, true)) {
             return false;
@@ -108,12 +108,12 @@ final class Processor
         return !empty($this->getFileCopierSourcesFromExtra());
     }
 
-    private function getRootDir(): string
+    protected function getRootDir(): string
     {
         return \dirname($this->composer->getConfig()->get('vendor-dir'));
     }
 
-    private function getFileCopierSourcesFromExtra(): array
+    protected function getFileCopierSourcesFromExtra(): array
     {
         $extra = $this->package->getExtra();
 
@@ -131,7 +131,7 @@ final class Processor
     /**
      * Retrieves the list of excluded composer package types if overridden in config.
      */
-    private function getExcludedComposerTypes(): array
+    protected function getExcludedComposerTypes(): array
     {
         $extra = $this->package->getExtra();
 
@@ -146,7 +146,7 @@ final class Processor
         return $this->excludedTypes;
     }
 
-    private function checkOptions(array $arrOptions): bool
+    protected function checkOptions(array $arrOptions): bool
     {
         if (isset($arrOptions[CopyJob::OVERRIDE])) {
             if (!\is_bool($arrOptions[CopyJob::OVERRIDE])) {
@@ -179,7 +179,7 @@ final class Processor
         return true;
     }
 
-    private function checkFilters(array $arrFilter): bool
+    protected function checkFilters(array $arrFilter): bool
     {
         if (isset($arrFilter[CopyJob::NAME])) {
             if (!\is_array($arrFilter[CopyJob::NAME]) || empty($arrFilter[CopyJob::NAME])) {

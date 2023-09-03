@@ -30,7 +30,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     /**
      * If root package is not a project, the plugin will not copy files.
      */
-    private bool $isProject = true;
+    protected bool $isProject = true;
 
     /**
      * {@inheritDoc}
