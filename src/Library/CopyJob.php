@@ -49,7 +49,7 @@ final class CopyJob
     private string|null $strOriginAbsolute;
 
     /**
-     * The absolute path to the destination.
+     * The absolute path to the target.
      */
     private string $strTargetAbsolute;
 
