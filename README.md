@@ -37,6 +37,7 @@ The configuration is made inside the [extra](https://getcomposer.org/doc/04-sche
             └── composer.json    # configuration goes here!
 
 ```
+
 <small>Big thanks to https://tree.nathanfriend.io for sharing this fancy tree generator. :heart:</small>
 <!--
 Edit the tree with this link:
@@ -103,6 +104,13 @@ Inside the **composer.json** of your package:
                         "< 3"
                     ]
                 }
+            },
+            {
+                "source": "data.json",
+                "target": "files/data.json",
+                "options": {
+                    "MERGE": "preserve"
+                }
             }
         ]
     }
@@ -118,11 +126,11 @@ Inside the **composer.json** of your package:
 
 ### Options
 
-| Option    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Affects         |
-|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
-| `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                                                                                                                                                                                                                                                                                                                                                                             | files & folders |
-| `DELETE`  | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters.                                                                                                                                                                                                                                                                                                                                               | folders         |
-| `MERGE`   | Merges source file with target file if it already exists. Accepted values: string <br/>- `replace`: Similar to PHP array merge, will replace any existing keys in target (Only formats supported `.json`). <br/>- `preserve`: Similar to PHP array merge, will preserve any existing keys in target (Only formats supported `.json`). <br/>- `none`: Does not merge. <br/>Defaults to `none` . | files           |
+| Option     | Description                                                                                                                                                                                                                                                                                             | Affects         |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                                                                                                                                     | files & folders |
+| `DELETE`   | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters.                                                                                                       | folders         |
+| `MERGE`    | Merges source file with target file if it already exists - similar to PHP's `array_merge()`.<br>Accepted values: `replace` or`preserve` .<br><br>`replace`: Will replace any existing keys in target.<br>`preserve`: Will preserve any existing keys in target.<br>Currently supported formats: `.json` | files & folders |
 
 ### Filters
 
@@ -133,15 +141,22 @@ Inside the **composer.json** of your package:
 | `DEPTH`    | Accepted values: array `"DEPTH": ["< 1","> 4"]` See [Symfony Finder](https://symfony.com/doc/current/components/finder.html#directory-depth) component.  |
 
 ## Additional configuration
-By default this package will not process the following package types: `library','metapackage','composer-plugin','project'`.
+
+By default, this package will not process the following package types: `library','metapackage','composer-plugin','project'`.
 This can be overridden in your composer.json by specifying which package to exclude:
+
 ```json
 {
     "extra": {
-        "composer-file-copier-excluded": ["library", "metapackage", "composer-plugin"]
+        "composer-file-copier-excluded": [
+            "library",
+            "metapackage",
+            "composer-plugin"
+        ]
     }
 }
 ```
 
 ## :warning: Last but not least!
+
 > Note, that this is a very **powerful but also dangerous tool** that can **OVERRIDE/DELETE files/folders** and **DESTROY/DAMAGE your installation** if wrongly applied.

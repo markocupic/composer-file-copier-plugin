@@ -14,9 +14,6 @@ declare(strict_types=1);
 
 namespace Markocupic\Composer\Plugin\Library;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use Composer\Package\BasePackage;
 use Markocupic\Composer\Plugin\Library\FileMergers\FileMergerInterface;
 use Markocupic\Composer\Plugin\Library\FileMergers\JsonFileMerger;
 use Symfony\Component\Filesystem\Filesystem;
@@ -28,38 +25,40 @@ use Symfony\Component\Filesystem\Path;
  * Assumes that info on source and target path already gathered.
  * Will usually be instantiated from a copyJob.
  */
-class MergeJob
+final class MergeJob
 {
+    public const MERGE_METHOD_REPLACE = 'replace';
+    public const MERGE_METHOD_PRESERVE = 'preserve';
+
     /**
      * List of methods that can be used for merging.
      */
     public const MERGE_METHODS = [
-        'replace',
-        'preserve',
-        'none'
+        self::MERGE_METHOD_REPLACE,
+        self::MERGE_METHOD_PRESERVE,
     ];
 
     /**
-     * Map of extension -> merge function.
+     * Map of merger classes with their supported extensions.
      */
-    public const MERGER_EXTENSION_MAP = [
-        JsonFileMerger::class => ['json']
+    private const MERGER_EXTENSION_MAP = [
+        JsonFileMerger::class => [JsonFileMerger::SUPPORTS_FILE_EXTENSION],
     ];
 
     /**
-     * Extension of origin file to be copied.
+     * Extension of origin file to be merged.
      */
-    protected string $originExtension;
+    private string $originExtension;
 
     /**
      * Extension of target file already present.
      */
-    protected string $targetExtension;
+    private string $targetExtension;
 
     public function __construct(
         protected readonly string $originPath,
         protected readonly string $targetPath,
-        protected ?string $mergeOption
+        protected string|null $mergeOption,
     ) {
         $this->originExtension = Path::getExtension($this->originPath);
         $this->targetExtension = Path::getExtension($this->targetPath);
@@ -77,35 +76,33 @@ class MergeJob
                 throw new \Exception('Invalid file type supplied');
             }
 
-            $fileMerger->mergeFiles($filesystem, $this->originPath, $this->targetPath, $this->mergeOption);
-
+            $fileMerger->mergeFile($filesystem, $this->originPath, $this->targetPath, $this->mergeOption);
         } catch (\Exception $exception) {
             throw new \Exception(sprintf('Unable to merge file %s to file %s due to exception %s', $this->originPath, $this->targetPath, $exception->getMessage()));
         }
     }
 
     /**
-     * Check if files should be merged.
+     * Check if the file should be merged.
      */
-    public function shouldMerge(Filesystem $fileSystem): bool
+    public function shouldMerge(Filesystem $filesystem): bool
     {
-        return $this->mergeOption
-            && ($this->mergeOption !== 'none')
-            && $fileSystem->exists($this->targetPath);
+        return \in_array($this->mergeOption, self::MERGE_METHODS, true) && $filesystem->exists($this->targetPath);
     }
 
     /**
-     * Checks that both origin and target match the supported extension.
+     * Checks that both origin and target matches the supported extension.
      */
-    public function checkSupportedExtension(): bool
+    public function checkHasSupportedExtension(): bool
     {
         $supportedExtensions = $this->getSupportedExtensions();
-        if (!in_array($this->originExtension, $supportedExtensions)) {
-            throw new \Exception('The origin file ' . $this->originPath . ' cannot be merged due to unsupported extension');
+
+        if (!\in_array($this->originExtension, $supportedExtensions, true)) {
+            throw new \Exception('The origin file '.$this->originPath.' cannot be merged due to unsupported extension.');
         }
 
-        if (!in_array($this->targetExtension, $supportedExtensions)) {
-            throw new \Exception('The target file ' . $this->targetPath . ' cannot be merged due to unsupported extension');
+        if (!\in_array($this->targetExtension, $supportedExtensions, true)) {
+            throw new \Exception('The target file '.$this->targetPath.' cannot be merged due to unsupported extension.');
         }
 
         return true;
@@ -120,13 +117,12 @@ class MergeJob
     }
 
     /**
-     * Gets the file merger class to process the supplied filed type.
+     * Gets the file merger class to process the supplied file type.
      */
-    public function getFileMergerByExtension(string $fileExtension): ?FileMergerInterface
+    public function getFileMergerByExtension(string $fileExtension): FileMergerInterface|null
     {
-        foreach (self::MERGER_EXTENSION_MAP as $fileMerger => $extensions)
-        {
-            if (in_array($fileExtension, $extensions)) {
+        foreach (self::MERGER_EXTENSION_MAP as $fileMerger => $extensions) {
+            if (\in_array($fileExtension, $extensions, true)) {
                 return new $fileMerger();
             }
         }

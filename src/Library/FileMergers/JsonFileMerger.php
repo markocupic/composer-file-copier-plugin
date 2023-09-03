@@ -14,34 +14,41 @@ declare(strict_types=1);
 
 namespace Markocupic\Composer\Plugin\Library\FileMergers;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use Composer\Package\BasePackage;
+use Markocupic\Composer\Plugin\Library\MergeJob;
 use Symfony\Component\Filesystem\Filesystem;
 
 /**
- * Merge job responsible for merging two files.
+ * Handles the merging process.
  *
  * Assumes that info on source and target path already gathered.
- * Will usually be instantiated from a copyJob.
+ * Will normally be instantiated by a copyJob.
  */
 class JsonFileMerger implements FileMergerInterface
 {
-    /**
-     * @inheritDoc.
-     */
-    public function mergeFiles(Filesystem $filesystem, string $originPath, string $targetPath, string $mergeOption): void
+    public const SUPPORTS_FILE_EXTENSION = 'json';
+
+    public function mergeFile(Filesystem $filesystem, string $originPath, string $targetPath, string $mergeOption): void
     {
+        if (!is_file($originPath)) {
+            throw new \Exception(sprintf('Could not find file "%s".', $originPath));
+        }
+
+        if (!is_file($targetPath)) {
+            throw new \Exception(sprintf('Could not find file "%s".', $targetPath));
+        }
+
         $originContentArr = $this->readJson($originPath);
         $targetContentArr = $this->readJson($targetPath);
 
-        // Merge parsed content by either replacing existing keys or preserving.
-        $mergedResult = $mergeOption === 'replace' ?
-            array_merge($targetContentArr, $originContentArr)
-            : array_merge($originContentArr, $targetContentArr);
+        // Merge parsed content by either replacing existing keys or preserving them.
+        if (MergeJob::MERGE_METHOD_REPLACE === $mergeOption) {
+            $mergedResult = array_merge($targetContentArr, $originContentArr);
+        } else {
+            $mergedResult = array_merge($originContentArr, $targetContentArr);
+        }
 
-        // Write Json file
-        $filesystem->dumpFile($targetPath, json_encode($mergedResult,JSON_PRETTY_PRINT));
+        // Write json file
+        $filesystem->dumpFile($targetPath, json_encode($mergedResult, JSON_PRETTY_PRINT));
     }
 
     /**
@@ -49,11 +56,11 @@ class JsonFileMerger implements FileMergerInterface
      */
     protected function readJson(string $filePath): array
     {
-        $contentArr = json_decode(\file_get_contents($filePath), true);
+        $contentArr = json_decode(file_get_contents($filePath), true);
 
-        // Any JSON parsing errors should throw an exception.
+        // Any json parsing errors should throw an exception.
         if (json_last_error() > 0) {
-            throw new \Exception(sprintf('Error processing file: %s . Error: %s', $filePath, \json_last_error_msg()));
+            throw new \Exception(sprintf('Error processing file: %s . Error: %s', $filePath, json_last_error_msg()));
         }
 
         return $contentArr;

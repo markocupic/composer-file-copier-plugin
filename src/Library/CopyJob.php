@@ -22,7 +22,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Finder;
 
-class CopyJob
+final class CopyJob
 {
     public const OVERRIDE = 'OVERRIDE';
     public const DELETE = 'DELETE';
@@ -31,13 +31,13 @@ class CopyJob
     public const NOT_NAME = 'NOT_NAME';
     public const DEPTH = 'DEPTH';
 
-    protected array $options = [
+    private array $options = [
         'override' => false,
         'delete' => false,
         'merge' => 'none',
     ];
 
-    protected array $filter = [
+    private array $filter = [
         'name' => [],
         'notName' => [],
         'depth' => [],
@@ -46,21 +46,21 @@ class CopyJob
     /**
      * The absolute and canonicalized path to the source located inside the package install path.
      */
-    protected string|null $strOriginAbsolute;
+    private string|null $strOriginAbsolute;
 
     /**
      * The absolute path to the destination.
      */
-    protected string $strTargetAbsolute;
+    private string $strTargetAbsolute;
 
     public function __construct(
-        protected readonly string $strOrigin,
-        protected readonly string $strTarget,
+        private readonly string $strOrigin,
+        private readonly string $strTarget,
         array $arrOptions,
         array $arrFilter,
-        protected readonly BasePackage $package,
-        protected readonly Composer $composer,
-        protected readonly IOInterface $io,
+        private readonly BasePackage $package,
+        private readonly Composer $composer,
+        private readonly IOInterface $io,
     ) {
         $this->strOriginAbsolute = $this->getAbsolutePathForSource($strOrigin, $this->package->getName());
         $this->strTargetAbsolute = $this->getAbsolutePathForTarget($strTarget, $this->getRootDir());
@@ -93,7 +93,7 @@ class CopyJob
         }
 
         if (is_file($this->strOriginAbsolute)) {
-            // Only copy file if should not get merged.
+            // Only copy file if it should not get merged.
             if (!$this->performMergeJob($filesystem, $this->strOriginAbsolute, $this->strTargetAbsolute)) {
                 $this->copyFile($filesystem, $this->strOriginAbsolute, $this->strTargetAbsolute);
             }
@@ -145,7 +145,7 @@ class CopyJob
 
                 foreach ($results as $absolutePath => $relativePath) {
                     $targetPathAbsolute = $this->strTargetAbsolute.\DIRECTORY_SEPARATOR.$relativePath;
-                    // Only copy file if should not get merged.
+                    // Only copy file if it should not get merged.
                     if (!$this->performMergeJob($filesystem, $absolutePath, $targetPathAbsolute)) {
                         $this->copyFile($filesystem, $absolutePath, $this->strTargetAbsolute);
                     }
@@ -157,7 +157,7 @@ class CopyJob
     /**
      * Perform the actual file copy with option to override if exists.
      */
-    protected function copyFile(Filesystem $filesystem, string $originPath, string $targetPath)
+    private function copyFile(Filesystem $filesystem, string $originPath, string $targetPath): void
     {
         try {
             $filesystem->copy($originPath, $targetPath, $this->options['override']);
@@ -176,11 +176,12 @@ class CopyJob
     /**
      * Performs a merge job if conditions are met.
      */
-    protected function performMergeJob(Filesystem $filesystem, string $originPath, string $targetPath): bool
+    private function performMergeJob(Filesystem $filesystem, string $originPath, string $targetPath): bool
     {
         try {
             $mergeJob = new MergeJob($originPath, $targetPath, $this->options['merge']);
-            if ($mergeJob->shouldMerge($filesystem) && $mergeJob->checkSupportedExtension()) {
+
+            if ($mergeJob->shouldMerge($filesystem) && $mergeJob->checkHasSupportedExtension()) {
                 $mergeJob->mergeResource($filesystem);
 
                 $this->io->write(
@@ -192,11 +193,11 @@ class CopyJob
 
                 return true;
             }
-
-            return false;
         } catch (\Exception $e) {
             $this->io->write(sprintf('<error>File merging process aborted with error "%s" for source file "%s".</error>', $e->getMessage(), $originPath));
         }
+
+        return false;
     }
 
     /**
@@ -204,7 +205,7 @@ class CopyJob
      *
      * @throws \Exception
      */
-    protected function getRootDir(): string
+    private function getRootDir(): string
     {
         $rootDir = realpath(\dirname($this->composer->getConfig()->get('vendor-dir')));
 
@@ -219,7 +220,7 @@ class CopyJob
      * Returns the canonicalized absolute path of the source
      * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
-    protected function getAbsolutePathForSource(string $originPath, string $packageName): string|null
+    private function getAbsolutePathForSource(string $originPath, string $packageName): string|null
     {
         if (Path::isAbsolute($originPath)) {
             return $originPath;
@@ -239,7 +240,7 @@ class CopyJob
      * Returns the canonicalized absolute path of the source
      * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
-    protected function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
+    private function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
     {
         if (!Path::isAbsolute($targetPath)) {
             $targetPath = Path::makeAbsolute($targetPath, $rootDir);
