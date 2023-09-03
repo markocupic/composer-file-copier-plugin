@@ -87,6 +87,7 @@ final class MergeJob
      */
     public function shouldMerge(Filesystem $filesystem): bool
     {
+        echo $this->mergeOption;
         return \in_array($this->mergeOption, self::MERGE_METHODS, true) && $filesystem->exists($this->targetPath);
     }
 

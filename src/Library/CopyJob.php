@@ -34,7 +34,7 @@ final class CopyJob
     protected array $options = [
         'override' => false,
         'delete' => false,
-        'merge' => 'preserve',
+        'merge' => 'none',
     ];
 
     protected array $filter = [
