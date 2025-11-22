@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /*
- * This file is part of Composer File Copier Plugin.
+ * This file is part of the Composer File Copier Plugin.
  *
  * (c) Marko Cupic 2023 <m.cupic@gmx.ch>
  * @license MIT
@@ -24,25 +24,9 @@ use Symfony\Component\Finder\Finder;
 
 class CopyJob
 {
-    public const OVERRIDE = 'OVERRIDE';
-    public const DELETE = 'DELETE';
-    public const NAME = 'NAME';
-    public const NOT_NAME = 'NOT_NAME';
-    public const DEPTH = 'DEPTH';
-
-    protected array $options = [
-        'override' => false,
-        'delete' => false,
-    ];
-
-    protected array $filter = [
-        'name' => [],
-        'notName' => [],
-        'depth' => [],
-    ];
-
     /**
-     * The absolute and canonicalized path to the source located inside the package install path.
+     * The absolute and canonicalized path to the source located inside the package
+     * install path.
      */
     protected string|null $strOriginAbsolute;
 
@@ -54,23 +38,14 @@ class CopyJob
     public function __construct(
         protected readonly string $strOrigin,
         protected readonly string $strTarget,
-        array $arrOptions,
-        array $arrFilter,
+        protected readonly CopyConfig $copyConfig,
+        protected readonly FilterConfig $filterConfig,
         protected readonly BasePackage $package,
         protected readonly Composer $composer,
         protected readonly IOInterface $io,
     ) {
         $this->strOriginAbsolute = $this->getAbsolutePathForSource($strOrigin, $this->package->getName());
         $this->strTargetAbsolute = $this->getAbsolutePathForTarget($strTarget, $this->getRootDir());
-
-        // Set $this->options from $arrOptions
-        $this->options['override'] = isset($arrOptions[self::OVERRIDE]) && \is_bool($arrOptions[self::OVERRIDE]) && $arrOptions[self::OVERRIDE];
-        $this->options['delete'] = isset($arrOptions[self::DELETE]) && \is_bool($arrOptions[self::DELETE]) && $arrOptions[self::DELETE];
-
-        // Set $this->filter from $arrFilter
-        $this->filter['name'] = !empty($arrFilter[self::NAME]) && \is_array($arrFilter[self::NAME]) ? $arrFilter[self::NAME] : [];
-        $this->filter['notName'] = !empty($arrFilter[self::NOT_NAME]) && \is_array($arrFilter[self::NOT_NAME]) ? $arrFilter[self::NOT_NAME] : [];
-        $this->filter['depth'] = !empty($arrFilter[self::DEPTH]) && \is_array($arrFilter[self::DEPTH]) ? $arrFilter[self::DEPTH] : [];
     }
 
     public function copyResource(): void
@@ -78,65 +53,63 @@ class CopyJob
         $filesystem = new Filesystem();
 
         if (null === $this->strOriginAbsolute || false === realpath($this->strOriginAbsolute)) {
-            $this->io->write(sprintf('<error>Could not find the absolute path for the source "%s" inside the package "%s". Maybe it does not exist or the package "%s" is not installed!</error>', $this->strOrigin, $this->package->getName(), $this->package->getName()));
+            $this->io->write(\sprintf('<error>Could not find the absolute path for the source "%s" inside the package "%s". Maybe it does not exist or the package "%s" is not installed!</error>', $this->strOrigin, $this->package->getName(), $this->package->getName()));
 
             return;
         }
 
         if (!$filesystem->isAbsolutePath($this->strTargetAbsolute)) {
-            $this->io->write(sprintf('<error> Target "%s" is not an absolute path. Copy process aborted.</error>', $this->strTargetAbsolute));
+            $this->io->write(\sprintf('<error> Target "%s" is not an absolute path. Copy process aborted.</error>', $this->strTargetAbsolute));
 
             return;
         }
 
         if (is_file($this->strOriginAbsolute)) {
             try {
-                $filesystem->copy($this->strOriginAbsolute, $this->strTargetAbsolute, $this->options['override']);
+                $filesystem->copy($this->strOriginAbsolute, $this->strTargetAbsolute, $this->copyConfig->shouldDelete());
 
                 $this->io->write(
-                    sprintf(
+                    \sprintf(
                         'Added the <comment>%s</comment> file.',
                         $this->strTargetAbsolute,
                     ),
                 );
             } catch (\Exception $e) {
-                $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+                $this->io->write(\sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
             }
         } elseif (is_dir($this->strOriginAbsolute)) {
-            if (empty($this->filter['name']) && empty($this->filter['notName']) && empty($this->filter['depth'])) {
-                // If no filter is set use Filesystem::mirror().
+            if (empty($this->filterConfig->getName()) && empty($this->filterConfig->getNotName()) && empty($this->filterConfig->getDepth())) {
+                // If no filter is set, use Filesystem::mirror().
                 try {
-                    $filesystem->mirror($this->strOriginAbsolute, $this->strTargetAbsolute, null, $this->options);
+                    $options = ['override' => $this->copyConfig->shouldOverride()];
+                    $filesystem->mirror($this->strOriginAbsolute, $this->strTargetAbsolute, null, $options);
 
                     $this->io->write(
-                        sprintf(
+                        \sprintf(
                             'Added the <comment>%s</comment> folder %s.',
                             $this->strTargetAbsolute,
                             !empty($this->arrFlags) ? ' ['.implode(', ', $this->arrFlags).']' : '',
                         ),
                     );
                 } catch (\Exception $e) {
-                    $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+                    $this->io->write(\sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
                 }
             } else {
-                // Disable the delete option
-
-                $this->options['delete'] = false;
                 $finder = new Finder();
 
                 $finder->in($this->strOriginAbsolute);
                 $finder->files();
 
-                if (!empty($this->filter['depth'])) {
-                    $finder->depth($this->filter['depth']);
+                if (!empty($this->filterConfig->getDepth())) {
+                    $finder->depth($this->filterConfig->getDepth());
                 }
 
-                if (!empty($this->filter['name'])) {
-                    $finder->name($this->filter['name']);
+                if (!empty($this->filterConfig->getName())) {
+                    $finder->name($this->filterConfig->getName());
                 }
 
-                if (!empty($this->filter['notName'])) {
-                    $finder->notName($this->filter['notName']);
+                if (!empty($this->filterConfig->getNotName())) {
+                    $finder->notName($this->filterConfig->getNotName());
                 }
 
                 $results = [];
@@ -150,17 +123,17 @@ class CopyJob
 
                 foreach ($results as $absolutePath => $relativePath) {
                     try {
-                        $targetPathAbsolute = $this->strTargetAbsolute.\DIRECTORY_SEPARATOR.$relativePath;
-                        $filesystem->copy($absolutePath, $targetPathAbsolute, $this->options['override']);
+                        $targetPathAbsolute = Path::join($this->strTargetAbsolute, $relativePath);
+                        $filesystem->copy($absolutePath, $targetPathAbsolute, $this->copyConfig->shouldOverride());
 
                         $this->io->write(
-                            sprintf(
+                            \sprintf(
                                 'Added the <comment>%s</comment> file.',
                                 $targetPathAbsolute,
                             ),
                         );
                     } catch (\Exception $e) {
-                        $this->io->write(sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
+                        $this->io->write(\sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
                     }
                 }
             }
@@ -184,8 +157,8 @@ class CopyJob
     }
 
     /**
-     * Returns the canonicalized absolute path of the source
-     * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
+     * Returns the canonicalized absolute path of the source e.g.
+     * /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
     protected static function getAbsolutePathForSource(string $originPath, string $packageName): string|null
     {
@@ -204,8 +177,8 @@ class CopyJob
     }
 
     /**
-     * Returns the canonicalized absolute path of the source
-     * e.g. /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
+     * Returns the canonicalized absolute path of the source e.g.
+     * /home/customer_x/public_html/domain.ch/vendor/code4nix/super-package/data/foo.bar.
      */
     protected static function getAbsolutePathForTarget(string $targetPath, string $rootDir): string
     {
