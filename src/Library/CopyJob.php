@@ -18,6 +18,7 @@ use Composer\Composer;
 use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
+use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Filesystem\Path;
 use Symfony\Component\Finder\Finder;
@@ -31,7 +32,7 @@ class CopyJob
     protected string|null $strOriginAbsolute;
 
     /**
-     * The absolute path to the destination.
+     * The absolute path to the target location.
      */
     protected string $strTargetAbsolute;
 
@@ -74,21 +75,22 @@ class CopyJob
                         $this->strTargetAbsolute,
                     ),
                 );
+            } catch (FileNotFoundException $e) {
+                $this->io->write(\sprintf('<error>Origin File %s does not exist. Copy process aborted with error "%s".</error>', $this->strOriginAbsolute, $e->getMessage()));
             } catch (\Exception $e) {
                 $this->io->write(\sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
             }
         } elseif (is_dir($this->strOriginAbsolute)) {
             if (empty($this->filterConfig->getName()) && empty($this->filterConfig->getNotName()) && empty($this->filterConfig->getDepth())) {
-                // If no filter is set, use Filesystem::mirror().
+                // If no filter is set, we use Filesystem::mirror().
                 try {
                     $options = ['override' => $this->copyConfig->shouldOverride()];
                     $filesystem->mirror($this->strOriginAbsolute, $this->strTargetAbsolute, null, $options);
 
                     $this->io->write(
                         \sprintf(
-                            'Added the <comment>%s</comment> folder %s.',
+                            'Added the <comment>%s</comment> folder.',
                             $this->strTargetAbsolute,
-                            !empty($this->arrFlags) ? ' ['.implode(', ', $this->arrFlags).']' : '',
                         ),
                     );
                 } catch (\Exception $e) {
@@ -114,17 +116,18 @@ class CopyJob
 
                 $results = [];
 
-                // check if there are any search results
+                // Check if there are any search results
                 if ($finder->hasResults()) {
                     foreach ($finder as $file) {
                         $results[$file->getRealPath()] = $file->getRelativePathname();
                     }
                 }
 
-                foreach ($results as $absolutePath => $relativePath) {
+                foreach ($results as $sourcePathAbsolute => $sourcePathRelative) {
                     try {
-                        $targetPathAbsolute = Path::join($this->strTargetAbsolute, $relativePath);
-                        $filesystem->copy($absolutePath, $targetPathAbsolute, $this->copyConfig->shouldOverride());
+                        $targetPathAbsolute = Path::join($this->strTargetAbsolute, $sourcePathRelative);
+
+                        $filesystem->copy($sourcePathAbsolute, $targetPathAbsolute, $this->copyConfig->shouldOverride());
 
                         $this->io->write(
                             \sprintf(
@@ -132,6 +135,8 @@ class CopyJob
                                 $targetPathAbsolute,
                             ),
                         );
+                    } catch (FileNotFoundException $e) {
+                        $this->io->write(\sprintf('<error>Origin File %s does not exist. Copy process aborted with error "%s".</error>', $sourcePathAbsolute, $e->getMessage()));
                     } catch (\Exception $e) {
                         $this->io->write(\sprintf('<error>Copy process aborted with error "%s".</error>', $e->getMessage()));
                     }
