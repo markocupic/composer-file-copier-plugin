@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /*
- * This file is part of Composer File Copier Plugin.
+ * This file is part of the Composer File Copier Plugin.
  *
- * (c) Marko Cupic 2023 <m.cupic@gmx.ch>
+ * (c) Marko Cupic <m.cupic@gmx.ch>
  * @license MIT
  * For the full copyright and license information,
  * please view the LICENSE file that was distributed with this source code.
@@ -32,9 +32,6 @@ class Plugin implements PluginInterface, EventSubscriberInterface
      */
     private bool $isProject = true;
 
-    /**
-     * {@inheritDoc}
-     */
     public function activate(Composer $composer, IOInterface $io): void
     {
         $this->repositoryManager = $composer->getRepositoryManager();
@@ -42,7 +39,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         if ('project' !== $composer->getPackage()->getType()) {
             $this->isProject = false;
             $io->writeError(
-                'Root package is not of type "project", we will not copy files or mirroring folders.'
+                'Root package is not of type "project", we will not copy files or mirroring folders.',
             );
         }
     }
@@ -58,16 +55,14 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
 
     /**
-     * Returns an array of event names this subscriber wants to listen to.
-     * The array keys are event names and the value can be:
-     * * The method name to call (priority defaults to 0)
-     * * An array composed of the method name to call and the priority
+     * Returns an array of event names this subscriber wants to listen to. The array
+     * keys are event names and the value can be: * The method name to call (priority
+     * defaults to 0) * An array composed of the method name to call and the priority
      * * An array of arrays composed of the method names to call and respective
      *   priorities, or 0 if unset
-     * For instance:
-     * * array('eventName' => 'methodName')
-     * * array('eventName' => array('methodName', $priority))
-     * * array('eventName' => array(array('methodName1', $priority), array('methodName2')).
+     * For instance: * array('eventName' => 'methodName') * array('eventName' =>
+     * array('methodName', $priority)) * array('eventName' =>
+     * array(array('methodName1', $priority), array('methodName2')).
      *
      * @return array The event names to listen to
      */
