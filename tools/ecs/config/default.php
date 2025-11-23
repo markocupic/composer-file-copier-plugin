@@ -12,7 +12,9 @@ return ECSConfig::configure()
 	->withPaths([
 		__DIR__ . '/../../src',
 	])
-	->withSkip([])
+    ->withSkip([
+        \Contao\EasyCodingStandard\Fixer\CommentLengthFixer::class          => ['Plugin.php'],
+    ])
 	->withRootFiles()
 	->withParallel()
 	->withSpacing(Option::INDENTATION_SPACES, "\n")

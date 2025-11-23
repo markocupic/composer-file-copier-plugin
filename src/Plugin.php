@@ -28,7 +28,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     protected RepositoryManager|null $repositoryManager = null;
 
     /**
-     * If root package is not a project, the plugin will not copy files.
+     * If the root package is not a project, the plugin will not copy files.
      */
     private bool $isProject = true;
 
@@ -55,16 +55,15 @@ class Plugin implements PluginInterface, EventSubscriberInterface
     }
 
     /**
-     * Returns an array of event names this subscriber wants to listen to. The array
-     * keys are event names and the value can be: * The method name to call (priority
-     * defaults to 0) * An array composed of the method name to call and the priority
-     * * An array of arrays composed of the method names to call and respective
-     *   priorities, or 0 if unset
-     * For instance: * array('eventName' => 'methodName') * array('eventName' =>
-     * array('methodName', $priority)) * array('eventName' =>
-     * array(array('methodName1', $priority), array('methodName2')).
+     * Returns an array of event names this subscriber wants to listen to.
+     * The array keys are event names and the value can be:
+     * The method name to call (priority defaults to 0)
+     * Or: An array composed of the method name to call and the priority
+     * Or: An array of arrays composed of the method names to call and respective priorities, or 0 if unset.
      *
-     * @return array The event names to listen to
+     * For instance: array('eventName' => 'methodName')
+     * Or: array('eventName' => array('methodName', $priority))
+     * Or: array('eventName' => array(array('methodName1', $priority), array('methodName2')).
      */
     public static function getSubscribedEvents(): array
     {
@@ -79,7 +78,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
         $composer = $event->getComposer();
         $io = $event->getIO();
 
-        // If root package is not a project, the plugin does nothing.
+        // If the root package is not a project, the plugin does nothing.
         if (!$this->isProject) {
             return;
         }
@@ -96,7 +95,7 @@ class Plugin implements PluginInterface, EventSubscriberInterface
                 $processed[] = $package->getName();
 
                 $processor = new Processor($package, $composer, $io);
-                $processor->copyResources();
+                $processor->process();
             }
         }
     }
