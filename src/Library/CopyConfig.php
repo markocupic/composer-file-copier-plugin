@@ -29,28 +29,41 @@ class CopyConfig
 
     private bool $delete = false;
 
+    /**
+     * If true, target files newer than origin files are overwritten.
+     */
     public function shouldOverride(): bool
     {
         return $this->override;
     }
 
+    /**
+     * Whether to delete files that are not in the source directory (defaults to false).
+     */
     public function shouldDelete(): bool
     {
         return $this->delete;
     }
 
-    public function withOverride(bool $override): self
+    /**
+     * If true, target files newer than origin files are overwritten.
+     */
+    public function withOverride(bool $doOverride): self
     {
         $clone = clone $this;
-        $clone->override = $override;
+        $clone->override = $doOverride;
 
         return $clone;
     }
 
-    public function withDelete(bool $delete): self
+    /**
+     * If true, target files that are not in the source directory will be overridden
+     * (defaults to false).
+     */
+    public function withDelete(bool $doDelete): self
     {
         $clone = clone $this;
-        $clone->delete = $delete;
+        $clone->delete = $doDelete;
 
         return $clone;
     }

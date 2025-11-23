@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace Markocupic\Composer\Plugin\Library;
 
 use Composer\Composer;
+use Composer\InstalledVersions;
 use Composer\IO\IOInterface;
 use Composer\Package\BasePackage;
 
@@ -40,7 +41,7 @@ class Processor
         $this->excludedTypes = $this->getExcludedComposerTypes();
     }
 
-    public function copyResources(): void
+    public function process(): void
     {
         if (!$this->supports()) {
             return;
@@ -56,7 +57,7 @@ class Processor
         $this->io->write('<info>markocupic/composer-file-copier-plugin:</info>');
         $this->io->write(
             \sprintf(
-                'Package: <comment>%s</comment>',
+                'Running Composer File Copier Plugin for package: <comment>%s</comment>',
                 $this->package->getName(),
             ),
         );
@@ -66,13 +67,13 @@ class Processor
                 throw new \InvalidArgumentException(\sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The source key must contain a file or folder path.', $this->package->getName()));
             }
 
-            $origin = $arrSource['source'];
+            $pathOrigin = $arrSource['source'];
 
             if (empty($arrSource['target'])) {
                 throw new \InvalidArgumentException(\sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The target key must contain a file or folder path.', $this->package->getName()));
             }
 
-            $target = $arrSource['target'];
+            $pathTarget = $arrSource['target'];
 
             // Validate copy options
             $arrOptions = $arrSource['options'] ?? [];
@@ -108,15 +109,15 @@ class Processor
                 $filterConfig = $filterConfig->withDepth($arrFilter[FilterConfig::DEPTH]);
             }
 
-            // Run the copy job
-            $copyJob = new CopyJob($origin, $target, $copyConfig, $filterConfig, $this->package, $this->composer, $this->io);
-            $copyJob->copyResource();
+            // Run the copy task.
+            $copyTask = new FileCopyTask($this->package->getName(), $this->getPackageInstallPath($this->package->getName()), $this->getRootDir(), $this->io);
+            $copyTask->copyResource($pathOrigin, $pathTarget, $copyConfig, $filterConfig);
         }
 
         $this->io->write('');
     }
 
-    protected function supports(): bool
+    private function supports(): bool
     {
         if (\in_array(strtolower($this->package->getType()), $this->excludedTypes, true)) {
             return false;
@@ -125,12 +126,12 @@ class Processor
         return !empty($this->getFileCopierSourcesFromExtra());
     }
 
-    protected function getRootDir(): string
+    private function getRootDir(): string
     {
         return \dirname($this->composer->getConfig()->get('vendor-dir'));
     }
 
-    protected function getFileCopierSourcesFromExtra(): array
+    private function getFileCopierSourcesFromExtra(): array
     {
         $extra = $this->package->getExtra();
 
@@ -145,10 +146,16 @@ class Processor
         return [];
     }
 
+    private function getPackageInstallPath(string $packageName): string
+    {
+        // Get the installation path of the package that includes the source
+        return realpath((string) InstalledVersions::getInstallPath($packageName));
+    }
+
     /**
      * Retrieves the list of excluded composer package types if overridden in config.
      */
-    protected function getExcludedComposerTypes(): array
+    private function getExcludedComposerTypes(): array
     {
         $extra = $this->package->getExtra();
 
@@ -163,7 +170,7 @@ class Processor
         return $this->excludedTypes;
     }
 
-    protected function validateCopyOptions(array $options): bool
+    private function validateCopyOptions(array $options): void
     {
         $packageName = $this->package->getName();
 
@@ -176,11 +183,9 @@ class Processor
                 throw new \InvalidArgumentException(\sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The option.%s is not allowed.', $packageName, $key));
             }
         }
-
-        return true;
     }
 
-    protected function validateFilterOptions(array $arrFilter): bool
+    private function validateFilterOptions(array $arrFilter): void
     {
         $arrOptions = [FilterConfig::NAME, FilterConfig::NOT_NAME, FilterConfig::DEPTH];
 
@@ -191,8 +196,6 @@ class Processor
         }
 
         $this->validateAllowedFilterKeys($arrFilter);
-
-        return true;
     }
 
     private function validateBooleanOption(array $options, string $optionKey, string $packageName): void
