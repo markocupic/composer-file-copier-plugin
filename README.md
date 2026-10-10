@@ -126,7 +126,7 @@ Inside the **composer.json** of your package:
 | Option     | Description                                                                                                                                                                                       | Affects         |
 |------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | `OVERRIDE` | Accepted values: boolean `true` or `false`. Overwrite existing newer files in target directory. Default to `false`.                                                                               | files & folders |
-| `DELETE`   | Accepted values: boolean `true` or `false`. Whether to delete files that are not in the source directory should be deleted. Default to `false`. This option is not available, when using filters. | folders         |
+| `DELETE`   | Accepted values: boolean `true` or `false`. Delete files in the target directory that are not in the source directory. Default to `false`. This option is not available, when using filters. :warning: Files that were added to the target directory manually will be deleted! | folders         |
 
 ### Filters
 

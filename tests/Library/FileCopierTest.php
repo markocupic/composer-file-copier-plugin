@@ -78,6 +78,22 @@ class FileCopierTest extends TestCase
         $this->assertFileExists($this->dir.'/target/sub/deep/baz.css');
     }
 
+    public function testDeletesObsoleteFilesWhenMirroringIfConfigured(): void
+    {
+        $fs = new Filesystem();
+        $fs->dumpFile($this->dir.'/target/obsolete.txt', 'obsolete');
+
+        $copier = new FileCopier(new BufferIO());
+
+        $copier->mirrorDirectory($this->dir.'/source', $this->dir.'/target', new CopyConfig());
+        $this->assertFileExists($this->dir.'/target/obsolete.txt');
+
+        $copier->mirrorDirectory($this->dir.'/source', $this->dir.'/target', (new CopyConfig())->withDelete(true));
+        $this->assertFileDoesNotExist($this->dir.'/target/obsolete.txt');
+        $this->assertFileExists($this->dir.'/target/foo.txt');
+        $this->assertFileExists($this->dir.'/target/sub/deep/baz.css');
+    }
+
     public function testCopiesAFilteredDirectory(): void
     {
         $filter = (new FilterConfig())->withName(['*.css'])->withDepth(['< 2']);

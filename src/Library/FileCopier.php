@@ -49,7 +49,11 @@ class FileCopier
         // If no filter is set, we use Filesystem::mirror().
         try {
             $filesystem = new Filesystem();
-            $options = ['override' => $copyConfig->shouldOverride()];
+            $options = [
+                'override' => $copyConfig->shouldOverride(),
+                // Delete files in the target directory that are not in the source directory
+                'delete' => $copyConfig->shouldDelete(),
+            ];
             $filesystem->mirror($sourcePathAbsolute, $targetPathAbsolute, null, $options);
             $this->io->write(
                 \sprintf(

@@ -65,6 +65,10 @@ class FileCopyTask
                 return;
             }
 
+            if ($copyConfig->shouldDelete()) {
+                $this->io->write(\sprintf('<warning>The DELETE option is not supported in combination with filters and will be ignored for "%s".</warning>', $pathOrigin));
+            }
+
             // Filesystem::copy() if filters are set.
             $fileCopier->copyDirectory($pathOriginAbsolute, $pathTargetAbsolute, $copyConfig, $filterConfig);
         }

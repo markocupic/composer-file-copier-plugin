@@ -26,7 +26,7 @@ jobs:
                 run: composer update --working-dir=tools/ecs --no-interaction --no-progress
 
             -   name: Check the coding style
-                run: composer cs-check
+                run: ./ecs-debug.sh
 
     tests:
         name: PHP ${{ matrix.php }}${{ matrix.dependencies == 'lowest' && ' --prefer-lowest' || '' }}
@@ -54,4 +54,4 @@ jobs:
                 run: composer update --no-interaction --no-progress ${{ matrix.dependencies == 'lowest' && '--prefer-lowest --prefer-stable' || '' }}
 
             -   name: Run the unit tests
-                run: composer unit-tests
+                run: ./test-debug.sh
