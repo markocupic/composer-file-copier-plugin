@@ -22,9 +22,8 @@ use Symfony\Component\Finder\Finder;
 
 class FileCopier
 {
-    public function __construct(
-        private readonly IOInterface $io,
-    ) {
+    public function __construct(private readonly IOInterface $io)
+    {
     }
 
     public function copyFile(string $sourcePathAbsolute, string $targetPathAbsolute, CopyConfig $copyConfig): void

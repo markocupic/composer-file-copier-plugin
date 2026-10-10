@@ -6,6 +6,11 @@ Let's assume you have developed a **composer package**. Now you want selected fi
 
 The configuration is made inside the [extra](https://getcomposer.org/doc/04-schema.md#extra) key of the `composer.json` file of your freshly programmed composer package.
 
+## Requirements
+
+- PHP ^8.3
+- Composer ^2.1
+
 ## Installation
 
 `composer require markocupic/composer-file-copier-plugin`
@@ -58,8 +63,8 @@ Inside the **composer.json** of your package:
     "name": "code4nix/super-package",
     "type": "symfony-bundle",
     "require": {
-        "php": "^8.1",
-        "markocupic/composer-file-copier-plugin": "^0.1"
+        "php": "^8.3",
+        "markocupic/composer-file-copier-plugin": "^0.2"
     },
     "autoload": {
         "psr-4": {

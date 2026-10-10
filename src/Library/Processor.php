@@ -62,7 +62,13 @@ class Processor
             ),
         );
 
+        $packageInstallPath = $this->getPackageInstallPath();
+
         foreach ($arrSources as $arrSource) {
+            if (!\is_array($arrSource)) {
+                throw new \InvalidArgumentException(\sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". Each entry must be an object with a source and a target key.', $this->package->getName()));
+            }
+
             if (empty($arrSource['source'])) {
                 throw new \InvalidArgumentException(\sprintf('Found an invalid extra.composer-file-copier-plugin configuration inside composer.json of package "%s". The source key must contain a file or folder path.', $this->package->getName()));
             }
@@ -110,7 +116,7 @@ class Processor
             }
 
             // Run the copy task.
-            $copyTask = new FileCopyTask($this->package->getName(), $this->getPackageInstallPath($this->package->getName()), $this->getRootDir(), $this->io);
+            $copyTask = new FileCopyTask($this->package->getName(), $packageInstallPath, $this->getRootDir(), $this->io);
             $copyTask->copyResource($pathOrigin, $pathTarget, $copyConfig, $filterConfig);
         }
 
@@ -146,10 +152,22 @@ class Processor
         return [];
     }
 
-    private function getPackageInstallPath(string $packageName): string
+    /**
+     * Returns the installation path of the package or null if the package is not installed.
+     */
+    private function getPackageInstallPath(): string|null
     {
-        // Get the installation path of the package that includes the source
-        return realpath((string) InstalledVersions::getInstallPath($packageName));
+        $installPath = $this->composer->getInstallationManager()->getInstallPath($this->package);
+
+        if (null === $installPath && InstalledVersions::isInstalled($this->package->getName())) {
+            $installPath = InstalledVersions::getInstallPath($this->package->getName());
+        }
+
+        if (null === $installPath || false === ($realPath = realpath($installPath))) {
+            return null;
+        }
+
+        return $realPath;
     }
 
     /**
